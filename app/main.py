@@ -20,6 +20,71 @@ def health():
     return {"status": "ok"}
 
 
+def detect_qr(image_path: Path):
+    try:
+        from pyzbar.pyzbar import decode
+        import cv2
+
+        image = cv2.imread(str(image_path))
+        if image is None:
+            return {
+                "detected": False,
+                "data": None,
+                "method": None,
+                "error": "No se pudo leer la imagen",
+            }
+
+        decoded_codes = decode(image)
+        if decoded_codes:
+            qr_data = decoded_codes[0].data.decode("utf-8", errors="replace")
+            return {
+                "detected": True,
+                "data": qr_data,
+                "method": "pyzbar",
+                "error": None,
+            }
+    except Exception as exc:
+        pyzbar_error = str(exc)
+    else:
+        pyzbar_error = None
+
+    try:
+        import cv2
+
+        image = cv2.imread(str(image_path))
+        if image is None:
+            return {
+                "detected": False,
+                "data": None,
+                "method": None,
+                "error": "No se pudo leer la imagen",
+            }
+
+        detector = cv2.QRCodeDetector()
+        qr_data, points, _ = detector.detectAndDecode(image)
+        if points is not None and qr_data:
+            return {
+                "detected": True,
+                "data": qr_data,
+                "method": "opencv",
+                "error": None,
+            }
+    except Exception as exc:
+        return {
+            "detected": False,
+            "data": None,
+            "method": None,
+            "error": f"pyzbar: {pyzbar_error}; opencv: {exc}",
+        }
+
+    return {
+        "detected": False,
+        "data": None,
+        "method": None,
+        "error": pyzbar_error,
+    }
+
+
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...)):
     if file.content_type not in {"image/jpeg", "image/jpg"}:
@@ -40,10 +105,15 @@ async def upload_image(file: UploadFile = File(...)):
     filename = f"{created_at}-{uuid4().hex}.jpg"
     image_path = UPLOAD_DIR / filename
     image_path.write_bytes(image_bytes)
+    qr_result = detect_qr(image_path)
 
     return {
         "status": "ok",
         "filename": filename,
         "size": len(image_bytes),
         "content_type": file.content_type,
+        "qr_detectado": qr_result["detected"],
+        "qr_data": qr_result["data"],
+        "qr_metodo": qr_result["method"],
+        "qr_error": qr_result["error"],
     }

@@ -56,9 +56,15 @@ Respuesta:
   "status": "ok",
   "filename": "20260607T170000Z-abc123.jpg",
   "size": 12345,
-  "content_type": "image/jpeg"
+  "content_type": "image/jpeg",
+  "qr_detectado": true,
+  "qr_data": "AULA-101",
+  "qr_metodo": "pyzbar",
+  "qr_error": null
 }
 ```
+
+Si la imagen no contiene QR, `qr_detectado` sera `false` y `qr_data` sera `null`.
 
 # Web-Service-en-Render.
 EL SISTEMA IOT INTELIGENTE DE CONTROL DE ACCESO Y TRAZABILIDAD DE INGRESO A AULAS
