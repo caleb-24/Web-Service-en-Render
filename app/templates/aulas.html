@@ -4,8 +4,13 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h4 class="mb-0 fw-bold">Aulas</h4>
-  <span class="badge bg-warning text-dark fs-6">{{ aulas|length }}</span>
+  <button class="btn btn-warning btn-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalAula">
+    <i class="bi bi-door-open me-1"></i>Nueva Aula
+  </button>
 </div>
+
+<!-- Alerta resultado -->
+<div id="alerta" class="alert d-none mb-3"></div>
 
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
@@ -16,6 +21,7 @@
           <tr>
             <th class="ps-3">Nombre</th>
             <th>Descripción</th>
+            <th>ID</th>
             <th>Creada</th>
           </tr>
         </thead>
@@ -24,9 +30,8 @@
           <tr>
             <td class="ps-3 fw-semibold">{{ a.nombre }}</td>
             <td class="text-muted small">{{ a.descripcion or "—" }}</td>
-            <td class="small text-muted text-nowrap">
-              {{ a.created_at[:10] if a.created_at else "—" }}
-            </td>
+            <td class="small font-monospace text-muted" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ a.id }}">{{ a.id }}</td>
+            <td class="small text-muted text-nowrap">{{ a.created_at[:10] if a.created_at else "—" }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -35,9 +40,81 @@
     {% else %}
     <div class="text-center py-5 text-muted">
       <i class="bi bi-door-open display-4 d-block mb-2"></i>
-      Sin aulas. Crea una con <code>POST /aulas</code>.
+      Sin aulas. Usa el botón <strong>Nueva Aula</strong>.
     </div>
     {% endif %}
   </div>
 </div>
+
+<!-- Modal nueva aula -->
+<div class="modal fade" id="modalAula" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nueva Aula</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+          <input type="text" id="a-nombre" class="form-control" placeholder="Ej: Aula 101">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Descripción <span class="text-muted small">(opcional)</span></label>
+          <input type="text" id="a-desc" class="form-control" placeholder="Ej: Primer piso, bloque B">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-warning text-dark" id="btn-crear-aula">
+          <span id="spinner-aula" class="spinner-border spinner-border-sm d-none me-1"></span>
+          Crear Aula
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById("btn-crear-aula").addEventListener("click", async () => {
+  const nombre = document.getElementById("a-nombre").value.trim();
+  if (!nombre) { showAlert("El nombre es obligatorio.", "danger"); return; }
+
+  const body = { nombre };
+  const desc = document.getElementById("a-desc").value.trim();
+  if (desc) body.descripcion = desc;
+
+  toggleSpinner("spinner-aula", true);
+  try {
+    const resp = await fetch("/aulas", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      showAlert(`Aula <strong>${data.aula.nombre}</strong> creada correctamente.`, "success");
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      showAlert(data.detail || "Error al crear aula.", "danger");
+    }
+  } catch (e) {
+    showAlert("Error de red: " + e.message, "danger");
+  } finally {
+    toggleSpinner("spinner-aula", false);
+  }
+});
+
+function showAlert(msg, type) {
+  const el = document.getElementById("alerta");
+  el.className = `alert alert-${type}`;
+  el.innerHTML = msg;
+  const modal = bootstrap.Modal.getInstance(document.getElementById("modalAula"));
+  if (modal) modal.hide();
+}
+
+function toggleSpinner(id, show) {
+  document.getElementById(id).classList.toggle("d-none", !show);
+}
+</script>
 {% endblock %}

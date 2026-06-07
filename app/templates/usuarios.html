@@ -4,7 +4,9 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h4 class="mb-0 fw-bold">Usuarios Registrados</h4>
-  <span class="badge bg-primary fs-6">{{ usuarios|length }}</span>
+  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+    <i class="bi bi-person-plus me-1"></i>Nuevo Usuario
+  </button>
 </div>
 
 <!-- Stats por rol -->
@@ -32,6 +34,10 @@
   </div>
 </div>
 
+<!-- Alerta resultado -->
+<div id="alerta" class="alert d-none mb-3"></div>
+
+<!-- Tabla -->
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
     {% if usuarios %}
@@ -42,7 +48,7 @@
             <th class="ps-3">Nombre</th>
             <th>Rol</th>
             <th>Email</th>
-            <th>Aula</th>
+            <th>Aula ID</th>
             <th>Registrado</th>
           </tr>
         </thead>
@@ -60,10 +66,8 @@
               {% endif %}
             </td>
             <td class="text-muted small">{{ u.email or "—" }}</td>
-            <td class="small">{{ u.aula_id or "—" }}</td>
-            <td class="small text-muted text-nowrap">
-              {{ u.created_at[:10] if u.created_at else "—" }}
-            </td>
+            <td class="small font-monospace" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ u.aula_id or "—" }}</td>
+            <td class="small text-muted text-nowrap">{{ u.created_at[:10] if u.created_at else "—" }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -72,9 +76,98 @@
     {% else %}
     <div class="text-center py-5 text-muted">
       <i class="bi bi-person-plus display-4 d-block mb-2"></i>
-      Sin usuarios. Crea uno con <code>POST /usuarios</code>.
+      Sin usuarios. Usa el botón <strong>Nuevo Usuario</strong>.
     </div>
     {% endif %}
   </div>
 </div>
+
+<!-- Modal nuevo usuario -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nuevo Usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+          <input type="text" id="u-nombre" class="form-control" placeholder="Ej: Ana López">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email</label>
+          <input type="email" id="u-email" class="form-control" placeholder="correo@uniguajira.edu.co">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rol</label>
+          <select id="u-rol" class="form-select">
+            <option value="estudiante">Estudiante</option>
+            <option value="docente">Docente</option>
+            <option value="administrativo">Administrativo</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Aula ID <span class="text-muted small">(opcional)</span></label>
+          <input type="text" id="u-aula" class="form-control" placeholder="UUID del aula">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-crear-usuario">
+          <span id="spinner-usuario" class="spinner-border spinner-border-sm d-none me-1"></span>
+          Crear Usuario
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById("btn-crear-usuario").addEventListener("click", async () => {
+  const nombre = document.getElementById("u-nombre").value.trim();
+  if (!nombre) { showAlert("El nombre es obligatorio.", "danger"); return; }
+
+  const body = {
+    nombre,
+    rol: document.getElementById("u-rol").value,
+  };
+  const email = document.getElementById("u-email").value.trim();
+  const aula  = document.getElementById("u-aula").value.trim();
+  if (email) body.email = email;
+  if (aula)  body.aula_id = aula;
+
+  toggleSpinner("spinner-usuario", true);
+  try {
+    const resp = await fetch("/usuarios", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      showAlert(`Usuario <strong>${data.usuario.nombre}</strong> creado correctamente.`, "success");
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      showAlert(data.detail || "Error al crear usuario.", "danger");
+    }
+  } catch (e) {
+    showAlert("Error de red: " + e.message, "danger");
+  } finally {
+    toggleSpinner("spinner-usuario", false);
+  }
+});
+
+function showAlert(msg, type) {
+  const el = document.getElementById("alerta");
+  el.className = `alert alert-${type}`;
+  el.innerHTML = msg;
+  const modal = bootstrap.Modal.getInstance(document.getElementById("modalUsuario"));
+  if (modal) modal.hide();
+}
+
+function toggleSpinner(id, show) {
+  document.getElementById(id).classList.toggle("d-none", !show);
+}
+</script>
 {% endblock %}
