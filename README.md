@@ -19,5 +19,46 @@ uvicorn app.main:app --reload
 
 Luego abre `http://127.0.0.1:8000/`.
 
+## Endpoints
+
+### Salud
+
+```http
+GET /health
+```
+
+Respuesta:
+
+```json
+{"status": "ok"}
+```
+
+### Subir imagen desde ESP32-CAM
+
+```http
+POST /upload
+```
+
+Enviar una imagen JPEG como `multipart/form-data` usando el campo `file`.
+
+Ejemplo:
+
+```bash
+curl -X POST \
+  -F "file=@foto.jpg;type=image/jpeg" \
+  https://web-service-en-render.onrender.com/upload
+```
+
+Respuesta:
+
+```json
+{
+  "status": "ok",
+  "filename": "20260607T170000Z-abc123.jpg",
+  "size": 12345,
+  "content_type": "image/jpeg"
+}
+```
+
 # Web-Service-en-Render.
 EL SISTEMA IOT INTELIGENTE DE CONTROL DE ACCESO Y TRAZABILIDAD DE INGRESO A AULAS
