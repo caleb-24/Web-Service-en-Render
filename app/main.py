@@ -3,13 +3,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 app = FastAPI(title="Web Service en Render")
 
 UPLOAD_DIR = Path("uploads")
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # ---------------------------------------------------------------------------
 # Supabase client (lazy — app runs without DB if env vars absent)
@@ -270,3 +274,59 @@ def crear_aula(body: AulaCreate):
     if not resp.data:
         raise HTTPException(status_code=500, detail="No se pudo crear el aula")
     return {"status": "ok", "aula": resp.data[0]}
+
+
+# ---------------------------------------------------------------------------
+# Dashboard
+# ---------------------------------------------------------------------------
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    db = get_supabase()
+    accesos, total_accesos, total_usuarios, total_aulas, accesos_rechazados = [], 0, 0, 0, 0
+    if db:
+        r_accesos = db.table("accesos").select("*").order("created_at", desc=True).limit(100).execute()
+        r_usuarios = db.table("usuarios").select("id", count="exact").execute()
+        r_aulas = db.table("aulas").select("id", count="exact").execute()
+        accesos = r_accesos.data or []
+        total_accesos = len(accesos)
+        total_usuarios = r_usuarios.count or 0
+        total_aulas = r_aulas.count or 0
+        accesos_rechazados = sum(1 for a in accesos if not a.get("acceso_concedido"))
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "active": "dashboard",
+        "accesos": accesos,
+        "total_accesos": total_accesos,
+        "total_usuarios": total_usuarios,
+        "total_aulas": total_aulas,
+        "accesos_rechazados": accesos_rechazados,
+    })
+
+
+@app.get("/dashboard/usuarios", response_class=HTMLResponse)
+def dashboard_usuarios(request: Request):
+    db = get_supabase()
+    usuarios = []
+    if db:
+        resp = db.table("usuarios").select("*").order("created_at", desc=True).execute()
+        usuarios = resp.data or []
+    return templates.TemplateResponse("usuarios.html", {
+        "request": request,
+        "active": "usuarios",
+        "usuarios": usuarios,
+    })
+
+
+@app.get("/dashboard/aulas", response_class=HTMLResponse)
+def dashboard_aulas(request: Request):
+    db = get_supabase()
+    aulas = []
+    if db:
+        resp = db.table("aulas").select("*").order("nombre").execute()
+        aulas = resp.data or []
+    return templates.TemplateResponse("aulas.html", {
+        "request": request,
+        "active": "aulas",
+        "aulas": aulas,
+    })

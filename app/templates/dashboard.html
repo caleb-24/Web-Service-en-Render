@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Accesos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0 fw-bold">Historial de Accesos</h4>
+  <span class="text-muted small">Últimos {{ accesos|length }} registros</span>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card stat-card p-3 text-center">
+      <div class="display-6 text-primary">{{ total_accesos }}</div>
+      <div class="text-muted small mt-1"><i class="bi bi-camera me-1"></i>Total accesos</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card p-3 text-center">
+      <div class="display-6 text-success">{{ total_usuarios }}</div>
+      <div class="text-muted small mt-1"><i class="bi bi-people me-1"></i>Usuarios</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card p-3 text-center">
+      <div class="display-6 text-warning">{{ total_aulas }}</div>
+      <div class="text-muted small mt-1"><i class="bi bi-door-open me-1"></i>Aulas</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card p-3 text-center">
+      <div class="display-6 text-danger">{{ accesos_rechazados }}</div>
+      <div class="text-muted small mt-1"><i class="bi bi-x-circle me-1"></i>Rechazados</div>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if accesos %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Fecha</th>
+            <th>Archivo</th>
+            <th class="text-center">QR</th>
+            <th class="text-center">Rostro</th>
+            <th class="text-center">Acceso</th>
+            <th>QR Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in accesos %}
+          <tr>
+            <td class="ps-3 text-nowrap small text-muted">
+              {{ a.created_at[:19].replace("T", " ") if a.created_at else "—" }}
+            </td>
+            <td class="small font-monospace" style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              {{ a.filename or "—" }}
+            </td>
+            <td class="text-center">
+              {% if a.qr_detectado %}
+                <span class="badge badge-si">Sí</span>
+              {% else %}
+                <span class="badge badge-no">No</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if a.rostro_detectado %}
+                <span class="badge badge-si">Sí ({{ a.rostro_cantidad }})</span>
+              {% else %}
+                <span class="badge badge-no">No</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if a.acceso_concedido %}
+                <span class="badge bg-success"><i class="bi bi-check-lg"></i></span>
+              {% else %}
+                <span class="badge bg-danger"><i class="bi bi-x-lg"></i></span>
+              {% endif %}
+            </td>
+            <td class="small text-truncate" style="max-width:140px;">
+              {{ a.qr_data or "—" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-inbox display-4 d-block mb-2"></i>
+      Sin registros aún. Sube una imagen desde la ESP32-CAM.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

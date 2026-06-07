@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0 fw-bold">Usuarios Registrados</h4>
+  <span class="badge bg-primary fs-6">{{ usuarios|length }}</span>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if usuarios %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Nombre</th>
+            <th>Email</th>
+            <th>Aula</th>
+            <th>Registrado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+          <tr>
+            <td class="ps-3 fw-semibold">{{ u.nombre }}</td>
+            <td class="text-muted small">{{ u.email or "—" }}</td>
+            <td class="small">{{ u.aula_id or "—" }}</td>
+            <td class="small text-muted text-nowrap">
+              {{ u.created_at[:10] if u.created_at else "—" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-person-plus display-4 d-block mb-2"></i>
+      Sin usuarios. Crea uno con <code>POST /usuarios</code>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

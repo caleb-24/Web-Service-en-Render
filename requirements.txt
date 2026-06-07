@@ -5,3 +5,4 @@ opencv-python-headless
 pyzbar
 psycopg2-binary
 supabase
+jinja2

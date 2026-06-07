@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Aulas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0 fw-bold">Aulas</h4>
+  <span class="badge bg-warning text-dark fs-6">{{ aulas|length }}</span>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if aulas %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Nombre</th>
+            <th>Descripción</th>
+            <th>Creada</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in aulas %}
+          <tr>
+            <td class="ps-3 fw-semibold">{{ a.nombre }}</td>
+            <td class="text-muted small">{{ a.descripcion or "—" }}</td>
+            <td class="small text-muted text-nowrap">
+              {{ a.created_at[:10] if a.created_at else "—" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-door-open display-4 d-block mb-2"></i>
+      Sin aulas. Crea una con <code>POST /aulas</code>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
