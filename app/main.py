@@ -22,6 +22,32 @@ def health():
 
 def detect_qr(image_path: Path):
     try:
+        import cv2
+
+        image = cv2.imread(str(image_path))
+        if image is None:
+            return {
+                "detected": False,
+                "data": None,
+                "method": None,
+                "error": "No se pudo leer la imagen",
+            }
+
+        detector = cv2.QRCodeDetector()
+        qr_data, points, _ = detector.detectAndDecode(image)
+        if points is not None and qr_data:
+            return {
+                "detected": True,
+                "data": qr_data,
+                "method": "opencv",
+                "error": None,
+            }
+    except Exception as exc:
+        opencv_error = str(exc)
+    else:
+        opencv_error = None
+
+    try:
         from pyzbar.pyzbar import decode
         import cv2
 
@@ -44,44 +70,26 @@ def detect_qr(image_path: Path):
                 "error": None,
             }
     except Exception as exc:
-        pyzbar_error = str(exc)
-    else:
-        pyzbar_error = None
-
-    try:
-        import cv2
-
-        image = cv2.imread(str(image_path))
-        if image is None:
+        if opencv_error is None and "zbar" in str(exc).lower():
             return {
                 "detected": False,
                 "data": None,
                 "method": None,
-                "error": "No se pudo leer la imagen",
-            }
-
-        detector = cv2.QRCodeDetector()
-        qr_data, points, _ = detector.detectAndDecode(image)
-        if points is not None and qr_data:
-            return {
-                "detected": True,
-                "data": qr_data,
-                "method": "opencv",
                 "error": None,
             }
-    except Exception as exc:
+
         return {
             "detected": False,
             "data": None,
             "method": None,
-            "error": f"pyzbar: {pyzbar_error}; opencv: {exc}",
+            "error": f"opencv: {opencv_error}; pyzbar: {exc}",
         }
 
     return {
         "detected": False,
         "data": None,
         "method": None,
-        "error": pyzbar_error,
+        "error": opencv_error,
     }
 
 
