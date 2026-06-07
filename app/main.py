@@ -344,3 +344,67 @@ def dashboard_aulas(request: Request):
         name="aulas.html",
         context={"active": "aulas", "aulas": aulas},
     )
+
+
+# ---------------------------------------------------------------------------
+# Reportes
+# ---------------------------------------------------------------------------
+
+def _calcular_reportes(accesos: list) -> dict:
+    from collections import defaultdict
+
+    por_dia: dict = defaultdict(lambda: {"total": 0, "concedidos": 0, "rechazados": 0, "qr": 0, "rostro": 0})
+    for a in accesos:
+        fecha = (a.get("created_at") or "")[:10] or "sin-fecha"
+        por_dia[fecha]["total"] += 1
+        if a.get("acceso_concedido"):
+            por_dia[fecha]["concedidos"] += 1
+        else:
+            por_dia[fecha]["rechazados"] += 1
+        if a.get("qr_detectado"):
+            por_dia[fecha]["qr"] += 1
+        if a.get("rostro_detectado"):
+            por_dia[fecha]["rostro"] += 1
+
+    dias = [{"fecha": k, **v} for k, v in sorted(por_dia.items(), reverse=True)]
+    total = len(accesos)
+    concedidos = sum(1 for a in accesos if a.get("acceso_concedido"))
+    rechazados = total - concedidos
+
+    return {
+        "total": total,
+        "concedidos": concedidos,
+        "rechazados": rechazados,
+        "porcentaje_aprobacion": round(concedidos / total * 100, 1) if total else 0,
+        "qr_detectados": sum(1 for a in accesos if a.get("qr_detectado")),
+        "rostros_detectados": sum(1 for a in accesos if a.get("rostro_detectado")),
+        "por_dia": dias,
+    }
+
+
+@app.get("/reportes")
+def reportes_json():
+    db = get_supabase()
+    if not db:
+        raise HTTPException(status_code=503, detail="Base de datos no configurada")
+    accesos = db.table("accesos").select("*").order("created_at", desc=True).limit(500).execute().data or []
+    return _calcular_reportes(accesos)
+
+
+@app.get("/dashboard/reportes", response_class=HTMLResponse)
+def dashboard_reportes(request: Request):
+    db = get_supabase()
+    reporte = {"total": 0, "concedidos": 0, "rechazados": 0,
+               "porcentaje_aprobacion": 0, "qr_detectados": 0,
+               "rostros_detectados": 0, "por_dia": []}
+    if db:
+        try:
+            accesos = db.table("accesos").select("*").order("created_at", desc=True).limit(500).execute().data or []
+            reporte = _calcular_reportes(accesos)
+        except Exception:
+            pass
+    return templates.TemplateResponse(
+        request=request,
+        name="reportes.html",
+        context={"active": "reportes", "r": reporte},
+    )

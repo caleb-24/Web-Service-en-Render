@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0 fw-bold">Reportes de Ingresos</h4>
+  <span class="text-muted small">Últimos 500 registros</span>
+</div>
+
+<!-- Tarjetas resumen -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm p-3 text-center">
+      <div class="display-6 fw-bold text-primary">{{ r.total }}</div>
+      <div class="text-muted small mt-1"><i class="bi bi-camera me-1"></i>Total accesos</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm p-3 text-center">
+      <div class="display-6 fw-bold text-success">{{ r.concedidos }}</div>
+      <div class="text-muted small mt-1"><i class="bi bi-check-circle me-1"></i>Concedidos</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm p-3 text-center">
+      <div class="display-6 fw-bold text-danger">{{ r.rechazados }}</div>
+      <div class="text-muted small mt-1"><i class="bi bi-x-circle me-1"></i>Rechazados</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm p-3 text-center">
+      <div class="display-6 fw-bold text-info">{{ r.porcentaje_aprobacion }}%</div>
+      <div class="text-muted small mt-1"><i class="bi bi-bar-chart me-1"></i>Aprobación</div>
+    </div>
+  </div>
+</div>
+
+<!-- Detecciones -->
+<div class="row g-3 mb-4">
+  <div class="col-6">
+    <div class="card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3">
+      <i class="bi bi-qr-code display-6 text-secondary"></i>
+      <div>
+        <div class="fw-bold fs-4">{{ r.qr_detectados }}</div>
+        <div class="text-muted small">QR detectados</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3">
+      <i class="bi bi-person-bounding-box display-6 text-secondary"></i>
+      <div>
+        <div class="fw-bold fs-4">{{ r.rostros_detectados }}</div>
+        <div class="text-muted small">Rostros detectados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Barra de aprobación -->
+{% if r.total > 0 %}
+<div class="card border-0 shadow-sm mb-4 p-3">
+  <div class="d-flex justify-content-between small text-muted mb-1">
+    <span>Concedidos ({{ r.concedidos }})</span>
+    <span>Rechazados ({{ r.rechazados }})</span>
+  </div>
+  <div class="progress" style="height:20px;">
+    <div class="progress-bar bg-success" style="width:{{ r.porcentaje_aprobacion }}%">{{ r.porcentaje_aprobacion }}%</div>
+    <div class="progress-bar bg-danger" style="width:{{ 100 - r.porcentaje_aprobacion }}%"></div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Tabla por día -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white fw-semibold border-0 pt-3">
+    <i class="bi bi-calendar3 me-2"></i>Ingresos por día
+  </div>
+  <div class="card-body p-0">
+    {% if r.por_dia %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Fecha</th>
+            <th class="text-center">Total</th>
+            <th class="text-center">Concedidos</th>
+            <th class="text-center">Rechazados</th>
+            <th class="text-center">QR</th>
+            <th class="text-center">Rostros</th>
+            <th>Actividad</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in r.por_dia %}
+          {% set pct = (d.concedidos / d.total * 100) | int if d.total else 0 %}
+          <tr>
+            <td class="ps-3 fw-semibold text-nowrap">{{ d.fecha }}</td>
+            <td class="text-center">{{ d.total }}</td>
+            <td class="text-center text-success fw-semibold">{{ d.concedidos }}</td>
+            <td class="text-center text-danger">{{ d.rechazados }}</td>
+            <td class="text-center text-secondary">{{ d.qr }}</td>
+            <td class="text-center text-secondary">{{ d.rostro }}</td>
+            <td style="min-width:120px;">
+              <div class="progress" style="height:10px;">
+                <div class="progress-bar bg-success" style="width:{{ pct }}%"></div>
+                <div class="progress-bar bg-danger" style="width:{{ 100 - pct }}%"></div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-bar-chart display-4 d-block mb-2"></i>
+      Sin datos aún. Los reportes aparecen cuando la ESP32-CAM envíe imágenes.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
