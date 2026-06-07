@@ -298,15 +298,18 @@ def dashboard(request: Request):
         except Exception:
             total_aulas = 0
         accesos_rechazados = sum(1 for a in accesos if not a.get("acceso_concedido"))
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "active": "dashboard",
-        "accesos": accesos,
-        "total_accesos": len(accesos),
-        "total_usuarios": total_usuarios,
-        "total_aulas": total_aulas,
-        "accesos_rechazados": accesos_rechazados,
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard.html",
+        context={
+            "active": "dashboard",
+            "accesos": accesos,
+            "total_accesos": len(accesos),
+            "total_usuarios": total_usuarios,
+            "total_aulas": total_aulas,
+            "accesos_rechazados": accesos_rechazados,
+        },
+    )
 
 
 @app.get("/dashboard/usuarios", response_class=HTMLResponse)
@@ -316,11 +319,11 @@ def dashboard_usuarios(request: Request):
     if db:
         resp = db.table("usuarios").select("*").order("created_at", desc=True).execute()
         usuarios = resp.data or []
-    return templates.TemplateResponse("usuarios.html", {
-        "request": request,
-        "active": "usuarios",
-        "usuarios": usuarios,
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="usuarios.html",
+        context={"active": "usuarios", "usuarios": usuarios},
+    )
 
 
 @app.get("/dashboard/aulas", response_class=HTMLResponse)
@@ -330,8 +333,8 @@ def dashboard_aulas(request: Request):
     if db:
         resp = db.table("aulas").select("*").order("nombre").execute()
         aulas = resp.data or []
-    return templates.TemplateResponse("aulas.html", {
-        "request": request,
-        "active": "aulas",
-        "aulas": aulas,
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="aulas.html",
+        context={"active": "aulas", "aulas": aulas},
+    )
