@@ -213,10 +213,14 @@ def listar_accesos(limit: int = 50):
 # Usuarios
 # ---------------------------------------------------------------------------
 
+ROL_VALORES = {"estudiante", "docente", "administrativo"}
+
+
 class UsuarioCreate(BaseModel):
     nombre: str
     email: str | None = None
     aula_id: str | None = None
+    rol: str = "estudiante"
 
 
 @app.get("/usuarios")
@@ -233,7 +237,9 @@ def crear_usuario(body: UsuarioCreate):
     db = get_supabase()
     if not db:
         raise HTTPException(status_code=503, detail="Base de datos no configurada")
-    record = {"nombre": body.nombre}
+    if body.rol not in ROL_VALORES:
+        raise HTTPException(status_code=400, detail=f"Rol invalido. Valores: {sorted(ROL_VALORES)}")
+    record = {"nombre": body.nombre, "rol": body.rol}
     if body.email:
         record["email"] = body.email
     if body.aula_id:

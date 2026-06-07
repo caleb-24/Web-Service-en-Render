@@ -7,6 +7,31 @@
   <span class="badge bg-primary fs-6">{{ usuarios|length }}</span>
 </div>
 
+<!-- Stats por rol -->
+{% set estudiantes = usuarios | selectattr("rol", "equalto", "estudiante") | list %}
+{% set docentes    = usuarios | selectattr("rol", "equalto", "docente")    | list %}
+{% set admin       = usuarios | selectattr("rol", "equalto", "administrativo") | list %}
+<div class="row g-3 mb-4">
+  <div class="col-4">
+    <div class="card border-0 shadow-sm p-3 text-center">
+      <div class="display-6 text-primary fw-bold">{{ estudiantes|length }}</div>
+      <div class="text-muted small mt-1">Estudiantes</div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="card border-0 shadow-sm p-3 text-center">
+      <div class="display-6 text-success fw-bold">{{ docentes|length }}</div>
+      <div class="text-muted small mt-1">Docentes</div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="card border-0 shadow-sm p-3 text-center">
+      <div class="display-6 text-warning fw-bold">{{ admin|length }}</div>
+      <div class="text-muted small mt-1">Administrativos</div>
+    </div>
+  </div>
+</div>
+
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
     {% if usuarios %}
@@ -15,6 +40,7 @@
         <thead class="table-light">
           <tr>
             <th class="ps-3">Nombre</th>
+            <th>Rol</th>
             <th>Email</th>
             <th>Aula</th>
             <th>Registrado</th>
@@ -24,6 +50,15 @@
           {% for u in usuarios %}
           <tr>
             <td class="ps-3 fw-semibold">{{ u.nombre }}</td>
+            <td>
+              {% if u.rol == "docente" %}
+                <span class="badge bg-success">Docente</span>
+              {% elif u.rol == "administrativo" %}
+                <span class="badge bg-warning text-dark">Administrativo</span>
+              {% else %}
+                <span class="badge bg-primary">Estudiante</span>
+              {% endif %}
+            </td>
             <td class="text-muted small">{{ u.email or "—" }}</td>
             <td class="small">{{ u.aula_id or "—" }}</td>
             <td class="small text-muted text-nowrap">
