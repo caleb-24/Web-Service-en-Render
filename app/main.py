@@ -283,21 +283,26 @@ def crear_aula(body: AulaCreate):
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
     db = get_supabase()
-    accesos, total_accesos, total_usuarios, total_aulas, accesos_rechazados = [], 0, 0, 0, 0
+    accesos, total_usuarios, total_aulas, accesos_rechazados = [], 0, 0, 0
     if db:
-        r_accesos = db.table("accesos").select("*").order("created_at", desc=True).limit(100).execute()
-        r_usuarios = db.table("usuarios").select("id", count="exact").execute()
-        r_aulas = db.table("aulas").select("id", count="exact").execute()
-        accesos = r_accesos.data or []
-        total_accesos = len(accesos)
-        total_usuarios = r_usuarios.count or 0
-        total_aulas = r_aulas.count or 0
+        try:
+            accesos = db.table("accesos").select("*").order("created_at", desc=True).limit(100).execute().data or []
+        except Exception:
+            accesos = []
+        try:
+            total_usuarios = len(db.table("usuarios").select("id").execute().data or [])
+        except Exception:
+            total_usuarios = 0
+        try:
+            total_aulas = len(db.table("aulas").select("id").execute().data or [])
+        except Exception:
+            total_aulas = 0
         accesos_rechazados = sum(1 for a in accesos if not a.get("acceso_concedido"))
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "active": "dashboard",
         "accesos": accesos,
-        "total_accesos": total_accesos,
+        "total_accesos": len(accesos),
         "total_usuarios": total_usuarios,
         "total_aulas": total_aulas,
         "accesos_rechazados": accesos_rechazados,
