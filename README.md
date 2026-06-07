@@ -60,11 +60,23 @@ Respuesta:
   "qr_detectado": true,
   "qr_data": "AULA-101",
   "qr_metodo": "pyzbar",
-  "qr_error": null
+  "qr_error": null,
+  "rostro_detectado": true,
+  "rostro_cantidad": 1,
+  "rostros": [
+    {"x": 120, "y": 80, "width": 160, "height": 160}
+  ],
+  "rostro_metodo": "opencv-haarcascade",
+  "rostro_reconocido": false,
+  "rostro_usuario_id": null,
+  "rostro_error": null
 }
 ```
 
 Si la imagen no contiene QR, `qr_detectado` sera `false` y `qr_data` sera `null`.
+Si la imagen no contiene rostro frontal claro, `rostro_detectado` sera `false`.
+
+La Fase 3 actual detecta rostros con OpenCV. Para reconocer identidad se necesita una fase de registro de usuarios con imagenes de referencia.
 
 # Web-Service-en-Render.
 EL SISTEMA IOT INTELIGENTE DE CONTROL DE ACCESO Y TRAZABILIDAD DE INGRESO A AULAS

@@ -93,6 +93,70 @@ def detect_qr(image_path: Path):
     }
 
 
+def detect_faces(image_path: Path):
+    try:
+        import cv2
+
+        image = cv2.imread(str(image_path))
+        if image is None:
+            return {
+                "detected": False,
+                "count": 0,
+                "faces": [],
+                "method": None,
+                "recognized": False,
+                "user_id": None,
+                "error": "No se pudo leer la imagen",
+            }
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        detector = cv2.CascadeClassifier(cascade_path)
+
+        if detector.empty():
+            return {
+                "detected": False,
+                "count": 0,
+                "faces": [],
+                "method": None,
+                "recognized": False,
+                "user_id": None,
+                "error": "No se pudo cargar el detector facial",
+            }
+
+        faces = detector.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(60, 60),
+        )
+
+        face_boxes = [
+            {"x": int(x), "y": int(y), "width": int(w), "height": int(h)}
+            for (x, y, w, h) in faces
+        ]
+
+        return {
+            "detected": len(face_boxes) > 0,
+            "count": len(face_boxes),
+            "faces": face_boxes,
+            "method": "opencv-haarcascade",
+            "recognized": False,
+            "user_id": None,
+            "error": None,
+        }
+    except Exception as exc:
+        return {
+            "detected": False,
+            "count": 0,
+            "faces": [],
+            "method": None,
+            "recognized": False,
+            "user_id": None,
+            "error": str(exc),
+        }
+
+
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...)):
     if file.content_type not in {"image/jpeg", "image/jpg"}:
@@ -114,6 +178,7 @@ async def upload_image(file: UploadFile = File(...)):
     image_path = UPLOAD_DIR / filename
     image_path.write_bytes(image_bytes)
     qr_result = detect_qr(image_path)
+    face_result = detect_faces(image_path)
 
     return {
         "status": "ok",
@@ -124,4 +189,11 @@ async def upload_image(file: UploadFile = File(...)):
         "qr_data": qr_result["data"],
         "qr_metodo": qr_result["method"],
         "qr_error": qr_result["error"],
+        "rostro_detectado": face_result["detected"],
+        "rostro_cantidad": face_result["count"],
+        "rostros": face_result["faces"],
+        "rostro_metodo": face_result["method"],
+        "rostro_reconocido": face_result["recognized"],
+        "rostro_usuario_id": face_result["user_id"],
+        "rostro_error": face_result["error"],
     }
