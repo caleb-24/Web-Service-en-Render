@@ -48,6 +48,7 @@
             <th class="text-center">QR</th>
             <th class="text-center">Rostro</th>
             <th class="text-center">Acceso</th>
+            <th>Usuario</th>
             <th>QR Data</th>
           </tr>
         </thead>
@@ -79,6 +80,14 @@
                 <span class="badge bg-success"><i class="bi bi-check-lg"></i></span>
               {% else %}
                 <span class="badge bg-danger"><i class="bi bi-x-lg"></i></span>
+              {% endif %}
+            </td>
+            <td class="small">
+              {% if a.usuarios %}
+                <span class="fw-semibold">{{ a.usuarios.nombre }}</span>
+                <span class="text-muted">({{ a.usuarios.rol }})</span>
+              {% else %}
+                <span class="text-muted">—</span>
               {% endif %}
             </td>
             <td class="small text-truncate" style="max-width:140px;">

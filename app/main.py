@@ -158,16 +158,30 @@ async def upload_image(file: UploadFile = File(...)):
     # Persist access record to Supabase
     acceso_id = None
     db_error = None
+    usuario = None
     db = get_supabase()
     if db:
         try:
+            # Si se detecto QR, buscar usuario con ese codigo
+            if qr_result["detected"] and qr_result["data"]:
+                match = (
+                    db.table("usuarios")
+                    .select("id, nombre, rol")
+                    .eq("qr_code", qr_result["data"])
+                    .limit(1)
+                    .execute()
+                )
+                if match.data:
+                    usuario = match.data[0]
+
             record = {
                 "filename": filename,
                 "qr_detectado": qr_result["detected"],
                 "qr_data": qr_result["data"],
                 "rostro_detectado": face_result["detected"],
                 "rostro_cantidad": face_result["count"],
-                "acceso_concedido": False,
+                "acceso_concedido": usuario is not None,
+                "usuario_id": usuario["id"] if usuario else None,
             }
             resp = db.table("accesos").insert(record).execute()
             if resp.data:
@@ -193,6 +207,8 @@ async def upload_image(file: UploadFile = File(...)):
         "rostro_reconocido": face_result["recognized"],
         "rostro_usuario_id": face_result["user_id"],
         "rostro_error": face_result["error"],
+        "acceso_concedido": usuario is not None,
+        "usuario": usuario,
     }
 
 
@@ -221,6 +237,7 @@ class UsuarioCreate(BaseModel):
     email: str | None = None
     aula_id: str | None = None
     rol: str = "estudiante"
+    qr_code: str | None = None
 
 
 @app.get("/usuarios")
@@ -244,7 +261,14 @@ def crear_usuario(body: UsuarioCreate):
         record["email"] = body.email
     if body.aula_id:
         record["aula_id"] = body.aula_id
-    resp = db.table("usuarios").insert(record).execute()
+    if body.qr_code:
+        record["qr_code"] = body.qr_code
+    try:
+        resp = db.table("usuarios").insert(record).execute()
+    except Exception as exc:
+        if "qr_code" in str(exc) and "duplicate" in str(exc).lower():
+            raise HTTPException(status_code=409, detail="Ese codigo QR ya esta asignado a otro usuario")
+        raise HTTPException(status_code=500, detail=str(exc))
     if not resp.data:
         raise HTTPException(status_code=500, detail="No se pudo crear el usuario")
     return {"status": "ok", "usuario": resp.data[0]}
@@ -292,7 +316,7 @@ def dashboard(request: Request):
     accesos, total_usuarios, total_aulas, accesos_rechazados = [], 0, 0, 0
     if db:
         try:
-            accesos = db.table("accesos").select("*").order("created_at", desc=True).limit(100).execute().data or []
+            accesos = db.table("accesos").select("*, usuarios(nombre, rol)").order("created_at", desc=True).limit(100).execute().data or []
         except Exception:
             accesos = []
         try:

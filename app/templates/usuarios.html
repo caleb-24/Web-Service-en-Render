@@ -49,6 +49,7 @@
             <th>Rol</th>
             <th>Email</th>
             <th>Aula ID</th>
+            <th>QR</th>
             <th>Registrado</th>
           </tr>
         </thead>
@@ -67,6 +68,13 @@
             </td>
             <td class="text-muted small">{{ u.email or "—" }}</td>
             <td class="small font-monospace" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ u.aula_id or "—" }}</td>
+            <td class="small">
+              {% if u.qr_code %}
+                <span class="badge bg-dark font-monospace">{{ u.qr_code }}</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
             <td class="small text-muted text-nowrap">{{ u.created_at[:10] if u.created_at else "—" }}</td>
           </tr>
           {% endfor %}
@@ -111,6 +119,11 @@
           <label class="form-label fw-semibold">Aula ID <span class="text-muted small">(opcional)</span></label>
           <input type="text" id="u-aula" class="form-control" placeholder="UUID del aula">
         </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Código QR <span class="text-muted small">(opcional)</span></label>
+          <input type="text" id="u-qr" class="form-control font-monospace" placeholder="Texto codificado en el QR">
+          <div class="form-text">Si la ESP32-CAM detecta este código, el acceso se vincula automáticamente a este usuario.</div>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -134,8 +147,10 @@ document.getElementById("btn-crear-usuario").addEventListener("click", async () 
   };
   const email = document.getElementById("u-email").value.trim();
   const aula  = document.getElementById("u-aula").value.trim();
+  const qr    = document.getElementById("u-qr").value.trim();
   if (email) body.email = email;
   if (aula)  body.aula_id = aula;
+  if (qr)    body.qr_code = qr;
 
   toggleSpinner("spinner-usuario", true);
   try {
