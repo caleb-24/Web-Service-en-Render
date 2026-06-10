@@ -13,8 +13,8 @@
 // ------------------------------------------------------------
 // CONFIGURACIÓN — edita estos valores
 // ------------------------------------------------------------
-const char* WIFI_SSID      = "TU_WIFI_SSID";
-const char* WIFI_PASSWORD  = "TU_WIFI_PASSWORD";
+const char* WIFI_SSID      = "HOME";
+const char* WIFI_PASSWORD  = "2Faf4f818f8,";
 const char* SERVER_URL     = "https://web-service-en-render.onrender.com/upload";
 const int   INTERVALO_MS   = 10000;  // ms entre capturas (10 segundos)
 // ------------------------------------------------------------
@@ -110,10 +110,15 @@ void takeAndUpload() {
     connectWiFi();
   }
 
+  Serial.printf("[DEBUG] Heap libre: %u bytes\n", ESP.getFreeHeap());
+
   WiFiClientSecure client;
-  client.setInsecure();  // Sin verificación de certificado (suficiente para prototipo)
+  client.setInsecure();           // Sin verificación de certificado (suficiente para prototipo)
+  client.setHandshakeTimeout(60); // segundos — Render free tier puede tardar en despertar
 
   HTTPClient https;
+  https.setConnectTimeout(60000); // 60s para conectar
+  https.setTimeout(60000);        // 60s para leer respuesta
   if (!https.begin(client, SERVER_URL)) {
     Serial.println("[HTTP] No se pudo iniciar conexión");
     esp_camera_fb_return(fb);
