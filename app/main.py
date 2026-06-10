@@ -161,6 +161,7 @@ async def upload_image(file: UploadFile = File(...)):
     db_error = None
     usuario = None
     imagen_url = None
+    imagen_error = None
     db = get_supabase()
     if db:
         try:
@@ -184,8 +185,9 @@ async def upload_image(file: UploadFile = File(...)):
                     file_options={"content-type": "image/jpeg"},
                 )
                 imagen_url = db.storage.from_(BUCKET_FOTOS).get_public_url(f"accesos/{filename}")
-            except Exception:
+            except Exception as exc:
                 imagen_url = None
+                imagen_error = str(exc)
 
             record = {
                 "filename": filename,
@@ -210,6 +212,7 @@ async def upload_image(file: UploadFile = File(...)):
         "content_type": file.content_type,
         "acceso_id": acceso_id,
         "imagen_url": imagen_url,
+        "imagen_error": imagen_error,
         "db_error": db_error,
         "qr_detectado": qr_result["detected"],
         "qr_data": qr_result["data"],
