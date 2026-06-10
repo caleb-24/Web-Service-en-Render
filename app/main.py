@@ -12,6 +12,7 @@ app = FastAPI(title="Web Service en Render")
 
 UPLOAD_DIR = Path("uploads")
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
+BUCKET_FOTOS = "fotos"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
@@ -159,6 +160,7 @@ async def upload_image(file: UploadFile = File(...)):
     acceso_id = None
     db_error = None
     usuario = None
+    imagen_url = None
     db = get_supabase()
     if db:
         try:
@@ -174,8 +176,20 @@ async def upload_image(file: UploadFile = File(...)):
                 if match.data:
                     usuario = match.data[0]
 
+            # Subir imagen al bucket publico para verla desde el dashboard
+            try:
+                db.storage.from_(BUCKET_FOTOS).upload(
+                    path=f"accesos/{filename}",
+                    file=image_bytes,
+                    file_options={"content-type": "image/jpeg"},
+                )
+                imagen_url = db.storage.from_(BUCKET_FOTOS).get_public_url(f"accesos/{filename}")
+            except Exception:
+                imagen_url = None
+
             record = {
                 "filename": filename,
+                "imagen_url": imagen_url,
                 "qr_detectado": qr_result["detected"],
                 "qr_data": qr_result["data"],
                 "rostro_detectado": face_result["detected"],
@@ -195,6 +209,7 @@ async def upload_image(file: UploadFile = File(...)):
         "size": len(image_bytes),
         "content_type": file.content_type,
         "acceso_id": acceso_id,
+        "imagen_url": imagen_url,
         "db_error": db_error,
         "qr_detectado": qr_result["detected"],
         "qr_data": qr_result["data"],

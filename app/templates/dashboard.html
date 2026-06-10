@@ -50,6 +50,7 @@
             <th class="text-center">Acceso</th>
             <th>Usuario</th>
             <th>QR Data</th>
+            <th class="text-center">Ver</th>
           </tr>
         </thead>
         <tbody>
@@ -93,6 +94,21 @@
             <td class="small text-truncate" style="max-width:140px;">
               {{ a.qr_data or "—" }}
             </td>
+            <td class="text-center">
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="modal" data-bs-target="#modalDetalle"
+                data-img="{{ a.imagen_url or '' }}"
+                data-fecha="{{ a.created_at[:19].replace('T', ' ') if a.created_at else '—' }}"
+                data-filename="{{ a.filename or '—' }}"
+                data-qr="{{ 'Sí — ' ~ a.qr_metodo if a.qr_detectado and a.qr_metodo else ('Sí' if a.qr_detectado else 'No') }}"
+                data-qrdata="{{ a.qr_data or '—' }}"
+                data-rostro="{{ ('Sí (' ~ a.rostro_cantidad ~ ' detectado(s))') if a.rostro_detectado else 'No' }}"
+                data-acceso="{{ 'Concedido' if a.acceso_concedido else 'Rechazado' }}"
+                data-usuario="{{ (a.usuarios.nombre ~ ' — ' ~ a.usuarios.rol) if a.usuarios else 'Sin vincular' }}"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -106,4 +122,62 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Modal detalle de acceso -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-camera me-2"></i>Detalle del acceso</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="d-img-wrap" class="text-center mb-3">
+          <img id="d-img" src="" alt="Foto del acceso" class="img-fluid rounded border" style="max-height:320px;">
+          <div id="d-img-empty" class="text-muted py-4 d-none">
+            <i class="bi bi-image display-4 d-block mb-2"></i>
+            Imagen no disponible
+          </div>
+        </div>
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th class="text-muted" style="width:40%;">Fecha</th><td id="d-fecha"></td></tr>
+            <tr><th class="text-muted">Archivo</th><td id="d-filename" class="font-monospace small"></td></tr>
+            <tr><th class="text-muted">QR detectado</th><td id="d-qr"></td></tr>
+            <tr><th class="text-muted">Contenido QR</th><td id="d-qrdata" class="font-monospace small"></td></tr>
+            <tr><th class="text-muted">Rostro detectado</th><td id="d-rostro"></td></tr>
+            <tr><th class="text-muted">Acceso</th><td id="d-acceso"></td></tr>
+            <tr><th class="text-muted">Usuario vinculado</th><td id="d-usuario"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById("modalDetalle").addEventListener("show.bs.modal", (event) => {
+  const btn = event.relatedTarget;
+  const img = document.getElementById("d-img");
+  const imgEmpty = document.getElementById("d-img-empty");
+  const url = btn.getAttribute("data-img");
+
+  if (url) {
+    img.src = url;
+    img.classList.remove("d-none");
+    imgEmpty.classList.add("d-none");
+  } else {
+    img.classList.add("d-none");
+    imgEmpty.classList.remove("d-none");
+  }
+
+  document.getElementById("d-fecha").textContent    = btn.getAttribute("data-fecha");
+  document.getElementById("d-filename").textContent = btn.getAttribute("data-filename");
+  document.getElementById("d-qr").textContent       = btn.getAttribute("data-qr");
+  document.getElementById("d-qrdata").textContent   = btn.getAttribute("data-qrdata");
+  document.getElementById("d-rostro").textContent   = btn.getAttribute("data-rostro");
+  document.getElementById("d-acceso").textContent   = btn.getAttribute("data-acceso");
+  document.getElementById("d-usuario").textContent  = btn.getAttribute("data-usuario");
+});
+</script>
 {% endblock %}
