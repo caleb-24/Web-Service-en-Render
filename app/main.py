@@ -3,10 +3,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from starlette.middleware.sessions import SessionMiddleware
 
 app = FastAPI(title="Web Service en Render")
 
@@ -15,6 +16,14 @@ MAX_IMAGE_SIZE = 5 * 1024 * 1024
 BUCKET_FOTOS = "fotos"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+
+def is_admin(request: Request) -> bool:
+    return bool(request.session.get("is_admin"))
 
 # ---------------------------------------------------------------------------
 # Supabase client (lazy — app runs without DB if env vars absent)
@@ -325,11 +334,43 @@ def crear_aula(body: AulaCreate):
 
 
 # ---------------------------------------------------------------------------
+# Login / Logout
+# ---------------------------------------------------------------------------
+
+@app.get("/login", response_class=HTMLResponse)
+def login_form(request: Request):
+    if is_admin(request):
+        return RedirectResponse("/dashboard", status_code=303)
+    return templates.TemplateResponse(
+        request=request, name="login.html", context={"error": None},
+    )
+
+
+@app.post("/login")
+def login(request: Request, password: str = Form(...)):
+    if password == ADMIN_PASSWORD:
+        request.session["is_admin"] = True
+        return RedirectResponse("/dashboard", status_code=303)
+    return templates.TemplateResponse(
+        request=request, name="login.html",
+        context={"error": "Contraseña incorrecta"}, status_code=401,
+    )
+
+
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/dashboard/reportes", status_code=303)
+
+
+# ---------------------------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------------------------
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/login", status_code=303)
     db = get_supabase()
     accesos, total_usuarios, total_aulas, accesos_rechazados = [], 0, 0, 0
     if db:
@@ -351,6 +392,7 @@ def dashboard(request: Request):
         name="dashboard.html",
         context={
             "active": "dashboard",
+            "is_admin": True,
             "accesos": accesos,
             "total_accesos": len(accesos),
             "total_usuarios": total_usuarios,
@@ -362,6 +404,8 @@ def dashboard(request: Request):
 
 @app.get("/dashboard/usuarios", response_class=HTMLResponse)
 def dashboard_usuarios(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/login", status_code=303)
     db = get_supabase()
     usuarios = []
     if db:
@@ -370,12 +414,14 @@ def dashboard_usuarios(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="usuarios.html",
-        context={"active": "usuarios", "usuarios": usuarios},
+        context={"active": "usuarios", "is_admin": True, "usuarios": usuarios},
     )
 
 
 @app.get("/dashboard/aulas", response_class=HTMLResponse)
 def dashboard_aulas(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/login", status_code=303)
     db = get_supabase()
     aulas = []
     if db:
@@ -384,7 +430,7 @@ def dashboard_aulas(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="aulas.html",
-        context={"active": "aulas", "aulas": aulas},
+        context={"active": "aulas", "is_admin": True, "aulas": aulas},
     )
 
 
@@ -448,5 +494,5 @@ def dashboard_reportes(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="reportes.html",
-        context={"active": "reportes", "r": reporte},
+        context={"active": "reportes", "is_admin": is_admin(request), "r": reporte},
     )

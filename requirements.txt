@@ -6,3 +6,4 @@ pyzbar
 psycopg2-binary
 supabase
 jinja2
+itsdangerous

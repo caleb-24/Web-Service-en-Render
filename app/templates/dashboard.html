@@ -179,5 +179,12 @@ document.getElementById("modalDetalle").addEventListener("show.bs.modal", (event
   document.getElementById("d-acceso").textContent   = btn.getAttribute("data-acceso");
   document.getElementById("d-usuario").textContent  = btn.getAttribute("data-usuario");
 });
+
+// Auto-actualizar cada 10s (pausa si el modal de detalle esta abierto)
+setInterval(() => {
+  if (!document.querySelector(".modal.show")) {
+    location.reload();
+  }
+}, 10000);
 </script>
 {% endblock %}
